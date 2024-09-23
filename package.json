@@ -1,0 +1,32 @@
+{
+  "name": "yt-scrape",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@distube/ytdl-core": "^4.14.4",
+    "@distube/ytpl": "^1.2.1",
+    "fluent-ffmpeg": "^2.1.3",
+    "mongoose": "^8.6.3",
+    "next": "14.2.12",
+    "react": "^18",
+    "react-dom": "^18",
+    "react-toastify": "^10.0.5",
+    "update": "^0.7.4",
+    "youtubei.js": "^10.4.0",
+    "yt-channel-info": "^3.2.1",
+    "ytdl-core": "^4.11.5"
+  },
+  "devDependencies": {
+    "eslint": "^8",
+    "eslint-config-next": "14.2.12",
+    "postcss": "^8",
+    "prettier": "^3.3.3",
+    "tailwindcss": "^3.4.1"
+  }
+}
