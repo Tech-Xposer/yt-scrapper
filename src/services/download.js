@@ -4,6 +4,7 @@ import path from "path";
 import Ffmpeg from "fluent-ffmpeg";
 import dbConnect from "@/lib/connect";
 import Movies from "@/models/movies.model";
+import Channel from "@/models/channel.model";
 
 const downloadVideo = async (videoUrl, downloadPath, videoId) => {
   console.log("starting download");
@@ -13,16 +14,17 @@ const downloadVideo = async (videoUrl, downloadPath, videoId) => {
 
   // Scrape video information
   const info = await scrapeVideoInfo(videoUrl);
-
   // find channel id
-  const channelId = info.videoDetails.author.channelId;
+  const channelId = info.videoDetails.author.id;
+  const channelUrl = info.videoDetails.author.user_url;
   //create channel if not exist
 
-  let channel = await Movies.findOne({ channelId: channelId });
+  let channel = await Channel.findOne({ channelId: channelId });
 
   if (!channel) {
-    channel = await Movies.create({
+    channel = await Channel.create({
       channelId: channelId,
+      channelUrl: channelUrl,
     });
   }
 
@@ -129,6 +131,13 @@ const downloadVideo = async (videoUrl, downloadPath, videoId) => {
           console.log(
             `Video and audio merged successfully: ${finalOutputPath}`,
           );
+          console.log({
+            videoId,
+            title: fileName,
+            url: videoUrl,
+            duration: info.videoDetails.durationSeconds,
+            channel: channel._id,
+          });
           // update downloaded status in db
           await Movies.findOneAndUpdate(
             { videoId },
