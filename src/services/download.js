@@ -13,6 +13,19 @@ const downloadVideo = async (videoUrl, downloadPath, videoId) => {
 
   // Scrape video information
   const info = await scrapeVideoInfo(videoUrl);
+
+  // find channel id
+  const channelId = info.videoDetails.author.channelId;
+  //create channel if not exist
+
+  let channel = await Movies.findOne({ channelId: channelId });
+
+  if (!channel) {
+    channel = await Movies.create({
+      channelId: channelId,
+    });
+  }
+
   const fileName = sanitizeFileName(info.videoDetails.title);
 
   const safeFileName = fileName.replace(/[^a-zA-Z0-9]/g, " ");
@@ -34,7 +47,6 @@ const downloadVideo = async (videoUrl, downloadPath, videoId) => {
     format = videoFormats.find((f) => f.qualityLabel === "360p");
   }
 
-
   // Output paths for video, audio, and the final merged file
 
   const videoOutputPath = path.join(downloadPath, `temp_${safeFileName}.mp4`);
@@ -47,10 +59,6 @@ const downloadVideo = async (videoUrl, downloadPath, videoId) => {
   const finalOutputPath = path.join(downloadPath, `${safeFileName}.mp4`);
 
   try {
-    // Download video and audio streams
-    // const videoStream = ytdl(videoUrl, { quality: "137" }).pipe(
-    //   fs.createWriteStream(videoOutputPath),
-    // );
     const videoStream = ytdl
       .downloadFromInfo(info, {
         format: format,
@@ -127,28 +135,34 @@ const downloadVideo = async (videoUrl, downloadPath, videoId) => {
             {
               $set: {
                 downloadStatus: "completed",
+                title: fileName,
+                url: videoUrl,
+                duration: info.videoDetails.durationSeconds,
+                channel: channel._id,
               },
             },
+            { upsert: true },
           );
-          // Clean up temporary files
-          fs.unlinkSync(videoOutputPath);
-          fs.unlinkSync(audioOutputPath);
+
           resolve();
         })
         .on("error", async (error) => {
           console.error("Error during merging:", error.message);
           await Movies.findOneAndUpdate(
-            { videoId },
+            {
+              videoId,
+            },
             {
               $set: {
-                downloadStatus: "completed",
+                downloadStatus: "failed",
+                title: fileName,
+                url: videoUrl,
+                duration: info.videoDetails.durationSeconds,
+                channel: channel._id,
               },
             },
+            { upsert: true },
           );
-          // Clean up temporary files
-          fs.unlinkSync(videoOutputPath);
-          fs.unlinkSync(audioOutputPath);
-          fs.unlinkSync(finalOutputPath);
 
           reject(error);
         })
@@ -162,6 +176,13 @@ const downloadVideo = async (videoUrl, downloadPath, videoId) => {
       error.message,
     );
     throw new Error(`Error in downloading video: ${error.message}`);
+  } finally {
+    if (fs.existsSync(videoOutputPath)) {
+      fs.unlinkSync(videoOutputPath);
+    }
+    if (fs.existsSync(audioOutputPath)) {
+      fs.unlinkSync(audioOutputPath);
+    }
   }
 };
 

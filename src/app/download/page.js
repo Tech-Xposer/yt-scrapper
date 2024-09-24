@@ -6,63 +6,48 @@ import { toast } from "react-toastify";
 
 // Function to fetch channel info
 async function fetchChannel(body) {
-  try {
-    const res = await fetch("/api/download", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
+  const res = await fetch("/api/channel", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
 
-    // Check if the response is successful
-    if (!res.ok) {
-      throw new Error(`Error: ${res.status} ${res.statusText}`);
-    }
-
-    const data = await res.json();
-    return data;
-  } catch (error) {
-    throw new Error(`Fetch failed: ${error.message}`);
-  }
+  return data;
 }
 
 // Main Home component
 export default function Home() {
   const [url, setURL] = useState("");
-  const [query, setQuery] = useState("");
-  const [option, setOption] = useState("video");
-  const [destination, setDestination] = useState("");
   const [loading, setLoading] = useState(false);
-
+  const [data, setData] = useState({});
   const handleSubmit = async (e) => {
+    setLoading(true);
     e.preventDefault();
     if (url.length === 0) {
-      toast.error("Please enter a URL");
+      alert("Please enter a URL");
       return;
     }
+    console.log("Submitting form with URL:", url);
 
     const body = {
       url,
-      searchTerms: query,
-      destination,
-      option,
     };
 
-    setLoading(true);
+    const res = await fetchChannel(body);
+    if (res) {
+      setLoading(false);
+      console.log(res);
+      setData(res.data);
 
-    try {
-      const data = await fetchChannel(body);
-      setLoading(false);
-      if (data) {
-        setURL("");
-        toast.success("Downloaded Successfully!");
-      }
-    } catch (error) {
-      setLoading(false);
-      toast.error(`Download failed: ${error.message}`);
+      return toast("Scrapped Successfully!");
     }
+    console.log(res);
   };
+
+  // Handle folder selection
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-yellow-100 to-yellow-300 p-5 text-black">
@@ -78,98 +63,17 @@ export default function Home() {
         {/* URL Input */}
         <div className="flex flex-col space-y-2">
           <label htmlFor="url" className="text-gray-700 font-semibold">
-            URL
+            Channel URL
           </label>
           <input
             type="url"
             id="url"
             name="url"
             value={url}
-            placeholder="Enter YouTube Video, Playlist, or Channel URL"
+            placeholder="Enter YouTube Channel URL"
             onChange={(e) => setURL(e.target.value)}
             className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 w-full"
             required
-          />
-        </div>
-
-        {/* Options for playlist, channel, or single video */}
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <input
-              type="radio"
-              id="video-option"
-              name="download-option"
-              onChange={() => setOption("video")}
-              checked={option === "video"}
-            />
-            <label
-              htmlFor="video-option"
-              className="text-gray-700 font-semibold cursor-pointer"
-            >
-              Video
-            </label>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="radio"
-              id="playlist-option"
-              name="download-option"
-              onChange={() => setOption("playlist")}
-              checked={option === "playlist"}
-            />
-            <label
-              htmlFor="playlist-option"
-              className="text-gray-700 font-semibold cursor-pointer"
-            >
-              Playlist
-            </label>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="radio"
-              id="channel-option"
-              name="download-option"
-              onChange={() => setOption("channel")}
-              checked={option === "channel"}
-            />
-            <label
-              htmlFor="channel-option"
-              className="text-gray-700 font-semibold cursor-pointer"
-            >
-              Channel
-            </label>
-          </div>
-        </div>
-
-        {/* Query Terms Input */}
-        <div className="flex flex-col space-y-2">
-          <label htmlFor="query" className="text-gray-700 font-semibold">
-            Query Terms (Optional)
-          </label>
-          <input
-            type="text"
-            id="query"
-            name="query"
-            value={query}
-            placeholder="Enter Search Terms"
-            onChange={(e) => setQuery(e.target.value)}
-            className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 w-full"
-          />
-        </div>
-
-        {/* Folder Input */}
-        <div className="flex flex-col space-y-2">
-          <label htmlFor="destination" className="text-gray-700 font-semibold">
-            Select Destination
-          </label>
-          <input
-            type="text"
-            id="destination"
-            name="destination"
-            value={destination}
-            placeholder="Enter Destination"
-            onChange={(e) => setDestination(e.target.value)}
-            className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 w-full"
           />
         </div>
 
@@ -181,9 +85,20 @@ export default function Home() {
         >
           {loading ? "Loading..." : "Scrape Channel Info"}
         </button>
+        <div className="flex flex-col">
+          {" "}
+          <div>
+            <span className="font-bold">
+              Channel Name: {data && data.channelName}
+            </span>
+          </div>
+          <span className="font-bold">
+            Total Videos Scrapped: {data && data.length}
+          </span>
+        </div>
       </form>
 
-      {/* Decorative Image */}
+      {/* Decorative Image (Optional) */}
       <Image
         src={ytScrapper}
         alt="YouTube Logo"

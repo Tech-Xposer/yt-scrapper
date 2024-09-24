@@ -9,7 +9,45 @@ This project allows users to download YouTube videos, playlists, and entire chan
 - Set custom search terms for targeted video retrieval.
 - Specify a destination folder for downloads.
 
-## Setup
+# Setup
+
+## Install [Node.js](https://nodejs.org/en/download/)
+
+- [Visit the official Node.js website](https://nodejs.org/en/) for download and installation instructions.
+- Download the latest **LTS (Long Term Support)** version for Windows, macOS, or Linux.
+
+### Run the Installer:
+
+1. Once downloaded, run the `.msi` installer.
+2. Follow the setup instructions, making sure the "Add to PATH" option is checked during installation.
+
+### Verify Installation:
+
+- Open **Command Prompt** or **PowerShell**.
+- Run the following commands to verify the Node.js and npm (Node Package Manager) installation:
+
+```bash
+node -v
+npm -v
+```
+
+## Install MongoDB
+
+### Download MongoDB:
+
+- Visit the official MongoDB website: [MongoDB Community Server](https://www.mongodb.com/try/download/community).
+- Choose the latest **MongoDB Community Server** version for Windows.
+
+### Run the Installer:
+
+1. Download the `.msi` installer and run it.
+2. Select **Complete Setup**.
+3. Choose **"Run MongoDB as a Service"** for automatic startup.
+4. Ensure **"Install MongoDB Compass"** is selected if you want a GUI for managing databases.
+
+---
+
+### Install Project Dependencies
 
 To get started with the project, follow these steps to install dependencies:
 
@@ -17,17 +55,9 @@ To get started with the project, follow these steps to install dependencies:
 npm install
 ```
 
-## Configuration
-
-## Install FFmpeg
-
-### For Windows
-
-install ffmpeg with `brew install ffmpeg` and `yarn add ffmpeg`
+## FFmpeg Setup
 
 <!-- windows user - download ffmpeg package and extract it in c drive or any other location and set it in PATH  -->
-
-## FFmpeg Setup
 
 ### Windows
 
@@ -57,19 +87,22 @@ MONGODB_URI = 'mongodb connection string'
 GOOGLE_API_KEY=" google api key"
 ```
 
-## Getting Started
+## Installation Instructions
+
+1. Clone the GitHub repository [yt-scrapper](https://github.com/Tech-Xposer/yt-scrapper) to your local machine .
+2. Open the project directory. Press **Shift** and right-click simultaneously, then click on **Open PowerShell window** or **Open Terminal**.
+   ![Right Click](image.png)
+3. Type `npm install` in the terminal. This command will install the necessary packages.
+   ![powershell windows](image-1.png)
+4. Run the command `npm run dev` to start the development server.
 
 First, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
+
+![runnig dev server](image-2.png)
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
@@ -91,3 +124,5 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+
+## Created by [Ashutosh Sharma](https://github.com/Tech-Xposer)

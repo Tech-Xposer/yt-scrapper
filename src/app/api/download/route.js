@@ -9,10 +9,29 @@ import os from "os";
 import path from "path";
 import fs from "fs";
 import ytpl from "@distube/ytpl";
-import { dir } from "console";
+
+// Utility function to create directory if not exists
+const ensureDirectoryExists = (directory) => {
+  if (!fs.existsSync(directory)) {
+    fs.mkdirSync(directory, { recursive: true });
+  }
+};
+
+// Utility function to filter videos based on search terms
+const filterVideosBySearchTerms = (videos, searchTerms) => {
+  if (!searchTerms || searchTerms.length === 0) {
+    return videos; // If no search terms, return all videos
+  }
+
+  const terms = searchTerms.split(" ").map(term => term.toLowerCase());
+  return videos.filter(video => {
+    const videoTitle = video.title.toLowerCase();
+    return terms.some(term => videoTitle.includes(term));
+  });
+};
+
 export async function POST(req) {
   const body = await req.json();
-
   const { url, searchTerms, destination, option } = body;
 
   // Validate URL presence
@@ -20,17 +39,12 @@ export async function POST(req) {
     throw new ApiError(400, "Url Required");
   }
 
+  const downloadPath = path.join(destination || os.homedir(), "Yt-Scrape-Output");
+  ensureDirectoryExists(downloadPath);
+
   try {
-    //checking option
-    const downloadPath = path.join(
-      destination || os.homedir(),
-      "Yt-Scrape-Output",
-    );
-    if (!fs.existsSync(downloadPath)) {
-      fs.mkdirSync(downloadPath);
-    }
     if (option === "video" || url.includes("watch")) {
-      //scraping video infomation
+      // Scrape and download single video
       const info = await scrapeVideoInfo(url);
       await downloadVideo(url, downloadPath, info.videoDetails.videoId);
 
@@ -38,81 +52,70 @@ export async function POST(req) {
         success: true,
         message: "Video downloaded successfully",
       });
+
     } else if (option === "playlist" || url.includes("playlist")) {
-      //scraping playlist infomation
-
+      // Scrape and download playlist
       const playlist = await ytpl(url);
-      const dirPath = path.join(downloadPath, sanitizeFileName(playlist.title));
+      const playlistPath = path.join(downloadPath, sanitizeFileName(playlist.title));
+      ensureDirectoryExists(playlistPath);
 
-      if (!fs.existsSync(dirPath)) {
-        fs.mkdirSync(dirPath, { recursive: true });
-      }
-
-      const videosToBeDownloaded = playlist.items.map((item) => ({
+      // Map and download videos in playlist
+      const videos = playlist.items.map((item) => ({
         url: item.shortUrl,
-        filePath: dirPath,
+        filePath: playlistPath,
         videoId: item.id,
       }));
 
-      for (const video of videosToBeDownloaded) {
+      for (const video of videos) {
         await downloadVideo(video.url, video.filePath, video.videoId);
       }
 
       return NextResponse.json({
         success: true,
-        message: `${videosToBeDownloaded.length} Playlist downloaded successfully`,
-        info: playlist,
+        message: `${videos.length} videos downloaded from playlist`,
+      });
+
+    } else if (url.includes("@")) {
+      // Scrape videos from YouTube channel
+      const userName = url.split("@")[1];
+      const scrapedVideos = await scrapeChannelVideos(userName);
+
+      if (!scrapedVideos) {
+        throw new ApiError(404, "Channel not found");
+      }
+
+      // Filter videos based on search terms
+      const filteredVideos = filterVideosBySearchTerms(scrapedVideos, searchTerms);
+
+      if (filteredVideos.length === 0) {
+        return NextResponse.json({
+          success: false,
+          message: "No videos found matching the search terms",
+        });
+      }
+
+      const channelPath = path.join(downloadPath, sanitizeFileName(userName));
+      ensureDirectoryExists(channelPath);
+
+      // Map and download filtered videos from channel
+      const videos = filteredVideos.map((item) => ({
+        url: `https://www.youtube.com/watch?v=${item.videoId}`,
+        filePath: channelPath,
+        videoId: item.videoId,
+      }));
+
+      for (const video of videos) {
+        await downloadVideo(video.url, video.filePath, video.videoId);
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `${videos.length} videos matching the search terms downloaded from channel`,
       });
     }
 
-    // Extract username from URL (if @ present)
-    const userName = url.includes("@") && url.split("@")[1];
+    throw new ApiError(400, "Invalid option or URL format");
 
-    // Scrape videos from the YouTube channel
-    const scrapedVideos = await scrapeChannelVideos(userName);
-
-    // If no videos found, throw an error
-    if (!scrapedVideos) {
-      throw new ApiError(404, "Channel not found");
-    }
-
-    // Create the username directory if it doesn't exist
-    const dirPath = path.join(
-      downloadPath,
-      sanitizeFileName(userName || "channel"),
-    );
-    if (!fs.existsSync(dirPath)) {
-      fs.mkdirSync(dirPath, { recursive: true });
-    }
-
-    // Prepare the list of videos to be downloaded
-    const videosToBeDownloaded = scrapedVideos.map((item) => {
-      return {
-        url: `https://www.youtube.com/watch?v=${item.videoId}`,
-        filePath: dirPath,
-        videoId: item.videoId,
-      };
-    });
-
-    // Check for the download directory
-
-    for (const video of videosToBeDownloaded) {
-      await downloadVideo(
-        video.url,
-        video.filePath,
-        sanitizeFileName(video.fileName),
-        video.videoId,
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: "Videos downloaded  successfully",
-      info: {
-        length: videosToBeDownloaded.length,
-        videos: videosToBeDownloaded,
-      },
-    });
   } catch (error) {
     console.error("Error in video processing:", error.message);
     return NextResponse.json(
@@ -121,7 +124,7 @@ export async function POST(req) {
         message: "Error processing videos",
         error: error.message,
       },
-      { status: error.statusCode || 500 },
+      { status: error.statusCode || 500 }
     );
   }
 }

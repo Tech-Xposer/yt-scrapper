@@ -63,10 +63,8 @@ export async function POST(req) {
     // Return a successful response with the scraped videos data
     return NextResponse.json(
       {
-        message: "Videos downloaded successfully",
-        data: { length: scrapedData.length,
-          channelName: userName,
-         },
+        message: "Videos scrapped successfully",
+        data: { length: scrapedData.length, channelName: userName },
       },
       { status: 200 },
     );

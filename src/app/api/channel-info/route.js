@@ -10,12 +10,16 @@ export async function POST(req) {
   }
   try {
     let userName = url.includes("@") && url.split("@")[1];
-    
+
     const channel = await getYtChannelInfo(`@${userName}`);
+
+    if (!channel) {
+      throw new ApiError(404, "Channel not found");
+    }
 
     return NextResponse.json(
       {
-        message:"Channel Info found successfully",
+        message: "Channel Info found successfully",
         data: channel,
       },
       { status: 200 },
